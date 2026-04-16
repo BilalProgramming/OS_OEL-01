@@ -1,12 +1,22 @@
 #!/bin/bash
 
+# ==============================
+# OS LAB: User Workspace Manager
+# ==============================
+
+# Base directory for all users (simulated lab environment)
 BASE_DIR="lab_users"
+
+# Archive directory for storing compressed inactive workspaces
 ARCHIVE_DIR="archives"
 
+# Create directories if they don't exist
 mkdir -p "$BASE_DIR"
 mkdir -p "$ARCHIVE_DIR"
 
+# Infinite loop for menu-driven system
 while true; do
+
     echo "=============================="
     echo " User Workspace Manager"
     echo "=============================="
@@ -17,64 +27,95 @@ while true; do
     echo "5. Exit"
     echo "=============================="
 
+    # Take user input for menu choice
     read -p "Enter choice: " choice
 
     case $choice in
 
+    # ------------------------------
+    # 1. Create user workspace
+    # ------------------------------
     1)
         read -p "Enter username: " user
         user_dir="$BASE_DIR/$user"
 
+        # Check if workspace already exists
         if [ -d "$user_dir" ]; then
             echo "Workspace already exists!"
         else
+            # Create required directories
             mkdir -p "$user_dir"/{docs,code,shared}
+
+            # Set permissions (only owner access)
             chmod 700 "$user_dir"
+
             echo "Workspace created: $user_dir"
         fi
         ;;
 
+    # ------------------------------
+    # 2. Disk quota (simulated)
+    # ------------------------------
     2)
         read -p "Enter username: " user
         user_dir="$BASE_DIR/$user"
 
         if [ -d "$user_dir" ]; then
+
+            # Get directory size in MB
             size=$(du -sm "$user_dir" 2>/dev/null | cut -f1)
 
             echo "Current usage: ${size}MB"
 
+            # Simulated quota check
             if [ "$size" -gt 100 ]; then
-                echo "⚠ WARNING: Workspace exceeds 100MB (simulated quota)"
+                echo "⚠ WARNING: Workspace exceeds 100MB quota"
             else
                 echo "Usage is within limit"
             fi
+
         else
             echo "User not found"
         fi
         ;;
 
+    # ------------------------------
+    # 3. Search files
+    # ------------------------------
     3)
         read -p "Enter filename or extension: " pattern
-        echo "Searching in all workspaces..."
 
+        echo "Searching files in all workspaces..."
+
+        # Find file and show detailed info
         find "$BASE_DIR" -type f -name "*$pattern*" -exec stat {} \; 2>/dev/null
         ;;
 
+    # ------------------------------
+    # 4. Archive inactive workspaces
+    # ------------------------------
     4)
-        echo "Archiving inactive workspaces (60+ days)..."
+        echo "Checking for inactive workspaces (60+ days)..."
 
+        # Loop through all user directories
         for user_dir in "$BASE_DIR"/*; do
+
             if [ -d "$user_dir" ]; then
 
+                # Check if any file is older than 60 days
                 if find "$user_dir" -type f -mtime +60 | grep -q .; then
+
                     user=$(basename "$user_dir")
                     archive_file="$ARCHIVE_DIR/${user}_archive.tar.gz"
 
+                    # Create compressed archive
                     tar -czf "$archive_file" -C "$BASE_DIR" "$user"
 
                     echo "Archived: $user"
 
+                    # Ask before deleting original folder
                     read -p "Delete original workspace? (y/n): " del
+
                     if [ "$del" == "y" ]; then
                         rm -rf "$user_dir"
                         echo "Deleted $user_dir"
@@ -84,8 +125,11 @@ while true; do
         done
         ;;
 
+    # ------------------------------
+    # 5. Exit program
+    # ------------------------------
     5)
-        echo "Exiting..."
+        echo "Exiting Workspace Manager..."
         exit 0
         ;;
 
